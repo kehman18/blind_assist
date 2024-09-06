@@ -64,7 +64,9 @@
       .then(response => response.json())
       .then(data => {
         if (data.description) {
-          descriptionDiv.textContent = `Description: ${data.description}`;
+          const description = `Description: ${data.description}`;
+          descriptionDiv.textContent = description;
+          speakDescription(description); // Call TTS to speak out the description
         } else {
           descriptionDiv.textContent = `Error: ${data.error}`;
         }
@@ -85,10 +87,19 @@
       return new Blob([new Uint8Array(array)], { type: mime });
     }
   
+    // Text-to-Speech function using SpeechSynthesis API
+    function speakDescription(text) {
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // Set language (can be customized)
+      synth.speak(utterance);
+    }
+  
     closePopup.addEventListener('click', () => {
       popup.style.display = 'none';
     });
-  </script>  
+  </script>
+  
 
 </body>
 </html>
