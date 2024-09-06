@@ -1,0 +1,5 @@
+flask
+transformers
+einops
+torchvision
+Pillow

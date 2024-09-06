@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera App</title>
+  <style>
+    /* Same styles as before */
+    /* Add styles for description */
+    #description {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <video id="camera" autoplay></video>
+    <button id="capture">Capture Image</button>
+  </div>
+
+  <div id="popup" class="popup">
+    <button class="close-btn" id="closePopup">X</button>
+    <img id="capturedImage" alt="Captured Image">
+    <div id="description"></div>
+  </div>
+
+  <script>
+    const video = document.getElementById('camera');
+    const captureButton = document.getElementById('capture');
+    const popup = document.getElementById('popup');
+    const closePopup = document.getElementById('closePopup');
+    const capturedImage = document.getElementById('capturedImage');
+    const descriptionDiv = document.getElementById('description');
+  
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+        video.srcObject = stream;
+        video.play();
+      });
+    }
+  
+    captureButton.addEventListener('click', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+      const imageData = canvas.toDataURL('image/png');
+      capturedImage.src = imageData;
+      popup.style.display = 'flex';
+  
+      // Send image to Flask server using FormData
+      const formData = new FormData();
+      formData.append('file', convertDataURLToBlob(imageData), 'image.png');
+  
+      fetch('/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.description) {
+          descriptionDiv.textContent = `Description: ${data.description}`;
+        } else {
+          descriptionDiv.textContent = `Error: ${data.error}`;
+        }
+      })
+      .catch(error => {
+        descriptionDiv.textContent = `Error: ${error}`;
+      });
+    });
+  
+    function convertDataURLToBlob(dataURL) {
+      const [header, data] = dataURL.split(',');
+      const mime = header.match(/:(.*?);/)[1];
+      const binary = atob(data);
+      const array = [];
+      for (let i = 0; i < binary.length; i++) {
+        array.push(binary.charCodeAt(i));
+      }
+      return new Blob([new Uint8Array(array)], { type: mime });
+    }
+  
+    closePopup.addEventListener('click', () => {
+      popup.style.display = 'none';
+    });
+  </script>  
+
+</body>
+</html>
