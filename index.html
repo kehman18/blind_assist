@@ -21,13 +21,18 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      width: 100%; /* Full width */
+      max-width: 600px; /* Set a max width for better display on larger screens */
+      margin: 0 auto;
     }
 
     #camera {
       border: 5px solid #333;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      max-width: 100%;
+      width: 100%; /* Take full width */
+      max-width: 100%; /* Keep within the container's width */
+      height: auto;
       margin-bottom: 20px;
     }
 
@@ -54,7 +59,6 @@
       font-size: 24px;
     }
 
-    /* Popup styling */
     #popup {
       display: none;
       position: fixed;
@@ -89,6 +93,7 @@
     .popup-content h2 {
       font-size: 22px;
       margin-bottom: 10px;
+      color: #333;
     }
 
     .close-popup {
@@ -115,6 +120,7 @@
     #description {
       margin-top: 10px;
       color: #2c3e50;
+      font-size: 18px;
     }
 
     @media (max-width: 768px) {
@@ -151,14 +157,32 @@
   const descriptionDiv = document.getElementById('description');
   const ttsPlaying = document.getElementById('ttsPlaying');
 
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-      video.srcObject = stream;
-      video.play();
-    });
+  let currentStream = null;
+  let currentFacingMode = "environment"; // Start with the back camera
+  let lastTap = 0; // To track the time of the last tap
+  let tapTimeout = null; // To handle single tap timeout
+
+  // Function to start the camera with the desired facing mode
+  async function startCamera(facingMode) {
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => track.stop());
+    }
+
+    try {
+      currentStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facingMode }
+      });
+      video.srcObject = currentStream;
+    } catch (error) {
+      console.error("Error accessing the camera:", error);
+    }
   }
 
-  captureButton.addEventListener('click', () => {
+  // Initialize the camera with the current facing mode
+  startCamera(currentFacingMode);
+
+  // Function to capture an image from the video stream
+  function captureImage() {
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -190,7 +214,7 @@
     .catch(error => {
       descriptionDiv.textContent = `Error: ${error}`;
     });
-  });
+  }
 
   function convertDataURLToBlob(dataURL) {
     const [header, data] = dataURL.split(',');
@@ -214,9 +238,33 @@
     ttsPlaying.style.display = 'block';
     utterance.onend = () => {
       ttsPlaying.style.display = 'none';
+      // Once the description is spoken, close the popup and return to camera mode
+      popup.style.display = 'none';
+      startCamera(currentFacingMode); // Restart the camera stream
     };
   }
 
+  // Handle tap events to differentiate between single and double tap
+  video.addEventListener('touchstart', function(event) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+
+    if (tapLength < 500 && tapLength > 0) {
+      // Double-tap detected: switch camera
+      clearTimeout(tapTimeout); // Cancel the single tap action
+      currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+      startCamera(currentFacingMode);
+    } else {
+      // Single tap detected, wait to confirm no double tap
+      tapTimeout = setTimeout(() => {
+        captureImage(); // Single tap action: capture the image
+      }, 500); // Delay before capturing to check for double tap
+    }
+
+    lastTap = currentTime;
+  });
+
+  captureButton.addEventListener('click', captureImage);
   closePopup.addEventListener('click', () => {
     popup.style.display = 'none';
   });
