@@ -1,274 +1,274 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Professional Camera App</title>
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f6f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Professional Camera App</title>
+    <link rel="icon" type="image/webp" href="favicon.webp" />
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f6f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
 
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%; /* Full width */
-      max-width: 600px; /* Set a max width for better display on larger screens */
-      margin: 0 auto;
-    }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%; /* Full width */
+        max-width: 600px; /* Set a max width for better display on larger screens */
+        margin: 0 auto;
+      }
 
-    #camera {
-      border: 5px solid #333;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      width: 100%; /* Take full width */
-      max-width: 100%; /* Keep within the container's width */
-      height: auto;
-      margin-bottom: 20px;
-    }
+      #camera {
+        border: 5px solid #333;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        width: 100%; /* Take full width */
+        max-width: 100%; /* Keep within the container's width */
+        height: auto;
+        margin-bottom: 20px;
+      }
 
-    #capture {
-      background-color: #4CAF50;
-      color: white;
-      padding: 15px 30px;
-      font-size: 18px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      transition: background-color 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    #capture:hover {
-      background-color: #45a049;
-    }
-
-    #capture i {
-      font-size: 24px;
-    }
-
-    #popup {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .popup-content {
-      background-color: #fff;
-      border-radius: 10px;
-      padding: 20px;
-      max-width: 90%;
-      max-height: 90%;
-      text-align: center;
-      position: relative;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-    }
-
-    .popup-content img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-
-    .popup-content h2 {
-      font-size: 22px;
-      margin-bottom: 10px;
-      color: #333;
-    }
-
-    .close-popup {
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      font-size: 24px;
-      color: #333;
-      cursor: pointer;
-    }
-
-    .close-popup:hover {
-      color: #e74c3c;
-    }
-
-    .tts-playing {
-      margin-top: 10px;
-      color: #3498db;
-      font-size: 18px;
-      font-weight: bold;
-      display: none;
-    }
-
-    #description {
-      margin-top: 10px;
-      color: #2c3e50;
-      font-size: 18px;
-    }
-
-    @media (max-width: 768px) {
       #capture {
-        padding: 10px 20px;
-        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        padding: 15px 30px;
+        font-size: 18px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
-    }
-  </style>
-</head>
-<body>
 
-<div class="container">
-  <video id="camera" autoplay></video>
-  <button id="capture"><i class="fa fa-camera"></i> Capture Image</button>
-</div>
-
-<!-- Popup for the captured image -->
-<div id="popup">
-  <div class="popup-content">
-    <span class="close-popup" id="closePopup">&times;</span>
-    <img id="capturedImage" src="" alt="Captured Image">
-    <h2 id="description">Image Description will appear here.</h2>
-    <div class="tts-playing" id="ttsPlaying">Playing description...</div>
-  </div>
-</div>
-
-<script>
-  const video = document.getElementById('camera');
-  const captureButton = document.getElementById('capture');
-  const popup = document.getElementById('popup');
-  const closePopup = document.getElementById('closePopup');
-  const capturedImage = document.getElementById('capturedImage');
-  const descriptionDiv = document.getElementById('description');
-  const ttsPlaying = document.getElementById('ttsPlaying');
-
-  let currentStream = null;
-  let currentFacingMode = "environment"; // Start with the back camera
-  let lastTap = 0; // To track the time of the last tap
-  let tapTimeout = null; // To handle single tap timeout
-
-  // Function to start the camera with the desired facing mode
-  async function startCamera(facingMode) {
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-    }
-
-    try {
-      currentStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode }
-      });
-      video.srcObject = currentStream;
-    } catch (error) {
-      console.error("Error accessing the camera:", error);
-    }
-  }
-
-  // Initialize the camera with the current facing mode
-  startCamera(currentFacingMode);
-
-  // Function to capture an image from the video stream
-  function captureImage() {
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const imageData = canvas.toDataURL('image/png');
-    capturedImage.src = imageData;
-    popup.style.display = 'flex';
-
-    // Send image to Flask server using FormData
-    const formData = new FormData();
-    formData.append('file', convertDataURLToBlob(imageData), 'image.png');
-
-    fetch('/upload', {
-      method: 'POST',
-      body: formData,
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.description) {
-        const description = `Description: ${data.description}`;
-        descriptionDiv.textContent = description;
-        speakDescription(description); // Call TTS to speak out the description
-      } else {
-        descriptionDiv.textContent = `Error: ${data.error}`;
+      #capture:hover {
+        background-color: #45a049;
       }
-    })
-    .catch(error => {
-      descriptionDiv.textContent = `Error: ${error}`;
-    });
-  }
 
-  function convertDataURLToBlob(dataURL) {
-    const [header, data] = dataURL.split(',');
-    const mime = header.match(/:(.*?);/)[1];
-    const binary = atob(data);
-    const array = [];
-    for (let i = 0; i < binary.length; i++) {
-      array.push(binary.charCodeAt(i));
-    }
-    return new Blob([new Uint8Array(array)], { type: mime });
-  }
+      #capture i {
+        font-size: 24px;
+      }
 
-  // Text-to-Speech function using SpeechSynthesis API
-  function speakDescription(text) {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US'; // Set language (can be customized)
-    synth.speak(utterance);
+      #popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
 
-    // Show "Playing description..." while TTS is active
-    ttsPlaying.style.display = 'block';
-    utterance.onend = () => {
-      ttsPlaying.style.display = 'none';
-      // Once the description is spoken, close the popup and return to camera mode
-      popup.style.display = 'none';
-      startCamera(currentFacingMode); // Restart the camera stream
-    };
-  }
+      .popup-content {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 90%;
+        max-height: 90%;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      }
 
-  // Handle tap events to differentiate between single and double tap
-  video.addEventListener('touchstart', function(event) {
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTap;
+      .popup-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
 
-    if (tapLength < 500 && tapLength > 0) {
-      // Double-tap detected: switch camera
-      clearTimeout(tapTimeout); // Cancel the single tap action
-      currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+      .popup-content h2 {
+        font-size: 22px;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .close-popup {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 24px;
+        color: #333;
+        cursor: pointer;
+      }
+
+      .close-popup:hover {
+        color: #e74c3c;
+      }
+
+      .tts-playing {
+        margin-top: 10px;
+        color: #3498db;
+        font-size: 18px;
+        font-weight: bold;
+        display: none;
+      }
+
+      #description {
+        margin-top: 10px;
+        color: #2c3e50;
+        font-size: 18px;
+      }
+
+      @media (max-width: 768px) {
+        #capture {
+          padding: 10px 20px;
+          font-size: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <video id="camera" autoplay></video>
+      <button id="capture"><i class="fa fa-camera"></i> Capture Image</button>
+    </div>
+
+    <!-- Popup for the captured image -->
+    <div id="popup">
+      <div class="popup-content">
+        <span class="close-popup" id="closePopup">&times;</span>
+        <img id="capturedImage" src="" alt="Captured Image" />
+        <h2 id="description">Image Description will appear here.</h2>
+        <div class="tts-playing" id="ttsPlaying">Playing description...</div>
+      </div>
+    </div>
+
+    <script>
+      const video = document.getElementById("camera");
+      const captureButton = document.getElementById("capture");
+      const popup = document.getElementById("popup");
+      const closePopup = document.getElementById("closePopup");
+      const capturedImage = document.getElementById("capturedImage");
+      const descriptionDiv = document.getElementById("description");
+      const ttsPlaying = document.getElementById("ttsPlaying");
+
+      let currentStream = null;
+      let currentFacingMode = "environment"; // Start with the back camera
+      let lastTap = 0; // To track the time of the last tap
+      let tapTimeout = null; // To handle single tap timeout
+
+      // Function to start the camera with the desired facing mode
+      async function startCamera(facingMode) {
+        if (currentStream) {
+          currentStream.getTracks().forEach((track) => track.stop());
+        }
+
+        try {
+          currentStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facingMode },
+          });
+          video.srcObject = currentStream;
+        } catch (error) {
+          console.error("Error accessing the camera:", error);
+        }
+      }
+
+      // Initialize the camera with the current facing mode
       startCamera(currentFacingMode);
-    } else {
-      // Single tap detected, wait to confirm no double tap
-      tapTimeout = setTimeout(() => {
-        captureImage(); // Single tap action: capture the image
-      }, 500); // Delay before capturing to check for double tap
-    }
 
-    lastTap = currentTime;
-  });
+      // Function to capture an image from the video stream
+      function captureImage() {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext("2d");
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  captureButton.addEventListener('click', captureImage);
-  closePopup.addEventListener('click', () => {
-    popup.style.display = 'none';
-  });
-</script>
+        const imageData = canvas.toDataURL("image/png");
+        capturedImage.src = imageData;
+        popup.style.display = "flex";
 
-</body>
+        // Send image to Flask server using FormData
+        const formData = new FormData();
+        formData.append("file", convertDataURLToBlob(imageData), "image.png");
+
+        fetch("/upload", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.description) {
+              const description = `Description: ${data.description}`;
+              descriptionDiv.textContent = description;
+              speakDescription(description); // Call TTS to speak out the description
+            } else {
+              descriptionDiv.textContent = `Error: ${data.error}`;
+            }
+          })
+          .catch((error) => {
+            descriptionDiv.textContent = `Error: ${error}`;
+          });
+      }
+
+      function convertDataURLToBlob(dataURL) {
+        const [header, data] = dataURL.split(",");
+        const mime = header.match(/:(.*?);/)[1];
+        const binary = atob(data);
+        const array = [];
+        for (let i = 0; i < binary.length; i++) {
+          array.push(binary.charCodeAt(i));
+        }
+        return new Blob([new Uint8Array(array)], { type: mime });
+      }
+
+      // Text-to-Speech function using SpeechSynthesis API
+      function speakDescription(text) {
+        const synth = window.speechSynthesis;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US"; // Set language (can be customized)
+        synth.speak(utterance);
+
+        // Show "Playing description..." while TTS is active
+        ttsPlaying.style.display = "block";
+        utterance.onend = () => {
+          ttsPlaying.style.display = "none";
+          // Once the description is spoken, close the popup and return to camera mode
+          popup.style.display = "none";
+          startCamera(currentFacingMode); // Restart the camera stream
+        };
+      }
+
+      // Handle tap events to differentiate between single and double tap
+      video.addEventListener("touchstart", function (event) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+
+        if (tapLength < 500 && tapLength > 0) {
+          // Double-tap detected: switch camera
+          clearTimeout(tapTimeout); // Cancel the single tap action
+          currentFacingMode =
+            currentFacingMode === "environment" ? "user" : "environment";
+          startCamera(currentFacingMode);
+        } else {
+          // Single tap detected, wait to confirm no double tap
+          tapTimeout = setTimeout(() => {
+            captureImage(); // Single tap action: capture the image
+          }, 500); // Delay before capturing to check for double tap
+        }
+
+        lastTap = currentTime;
+      });
+
+      captureButton.addEventListener("click", captureImage);
+      closePopup.addEventListener("click", () => {
+        popup.style.display = "none";
+      });
+    </script>
+  </body>
 </html>
