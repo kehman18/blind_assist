@@ -1,5 +1,6 @@
-flask
-transformers
-einops
-torchvision
-Pillow
+flask==3.0.3
+transformers==4.45.1
+einops==0.8.0
+torchvision==0.19.1
+Pillow==10.4.0
+gunicorn
