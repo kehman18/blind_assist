@@ -23,8 +23,8 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        width: 100%; /* Full width */
-        max-width: 600px; /* Set a max width for better display on larger screens */
+        width: 100%;
+        max-width: 600px;
         margin: 0 auto;
       }
 
@@ -32,8 +32,8 @@
         border: 5px solid #333;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        width: 100%; /* Take full width */
-        max-width: 100%; /* Keep within the container's width */
+        width: 100%;
+        max-width: 100%;
         height: auto;
         margin-bottom: 20px;
       }
@@ -202,7 +202,13 @@
           method: "POST",
           body: formData,
         })
-          .then((response) => response.json())
+          .then((response) => {
+            if (response.headers.get("content-type").includes("application/json")) {
+              return response.json();
+            } else {
+              throw new Error("Invalid response from server. Please try again.");
+            }
+          })
           .then((data) => {
             if (data.description) {
               const description = `Description: ${data.description}`;
@@ -213,7 +219,7 @@
             }
           })
           .catch((error) => {
-            descriptionDiv.textContent = `Error: ${error}`;
+            descriptionDiv.textContent = `Error: ${error.message}`;
           });
       }
 
@@ -239,7 +245,6 @@
         ttsPlaying.style.display = "block";
         utterance.onend = () => {
           ttsPlaying.style.display = "none";
-          // Once the description is spoken, close the popup and return to camera mode
           popup.style.display = "none";
           startCamera(currentFacingMode); // Restart the camera stream
         };
@@ -251,13 +256,11 @@
         const tapLength = currentTime - lastTap;
 
         if (tapLength < 500 && tapLength > 0) {
-          // Double-tap detected: switch camera
           clearTimeout(tapTimeout); // Cancel the single tap action
           currentFacingMode =
             currentFacingMode === "environment" ? "user" : "environment";
           startCamera(currentFacingMode);
         } else {
-          // Single tap detected, wait to confirm no double tap
           tapTimeout = setTimeout(() => {
             captureImage(); // Single tap action: capture the image
           }, 500); // Delay before capturing to check for double tap

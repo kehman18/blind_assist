@@ -30,7 +30,9 @@ def upload_image():
         return jsonify({'description': description}), 200
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Log the error for debugging and return a JSON error response
+        print(f"Error processing the image: {str(e)}")
+        return jsonify({'error': 'An error occurred while processing the image.'}), 500
 
 @app.route('/')
 def index():
